@@ -39,33 +39,49 @@ def clean_text(text):
 # MATCHING + HYBRID ATS SCORE
 # -----------------------------
 
+def extract_dynamic_skills(jd_text):
+
+    stopwords = {
+        "the", "and", "with", "for", "in", "of", "to", "is",
+        "a", "an", "on", "at", "by", "from",
+        "experience", "required", "looking", "candidate",
+        "role", "strong", "good", "ability", "team", "work",
+        "skills", "knowledge"
+    }
+
+    words = jd_text.split()
+
+    skills = set()
+
+    # 1-gram skills
+    for word in words:
+        if word not in stopwords and len(word) >= 3:
+            skills.add(word)
+
+    # 2-gram skills
+    for i in range(len(words) - 1):
+        w1, w2 = words[i], words[i + 1]
+        if w1 not in stopwords and w2 not in stopwords:
+            skills.add(w1 + " " + w2)
+
+    return list(skills)
+
 def calculate_match_score(resume_text, jd_text):
 
-    skills = [
-        "python", "java", "c++",
-        "machine learning", "deep learning",
-        "react", "node", "mongodb",
-        "sql", "aws", "docker", "git"
-    ]
+    skills = extract_dynamic_skills(jd_text)
 
     matched = []
     missing = []
 
     resume_words = set(resume_text.split())
-    jd_words = set(jd_text.split())
 
-    # ---- Skill Matching (Multi-word safe) ----
     for skill in skills:
         skill_words = skill.split()
 
-        # If skill appears in job description
-        if all(word in jd_words for word in skill_words):
-
-            # If skill appears in resume
-            if all(word in resume_words for word in skill_words):
-                matched.append(skill)
-            else:
-                missing.append(skill)
+        if all(word in resume_words for word in skill_words):
+            matched.append(skill)
+        else:
+            missing.append(skill)
 
     total_skills = len(matched) + len(missing)
 
@@ -74,14 +90,12 @@ def calculate_match_score(resume_text, jd_text):
         if total_skills != 0 else 0
     )
 
-    # ---- Semantic Similarity (TF-IDF) ----
     vectorizer = TfidfVectorizer()
     vectors = vectorizer.fit_transform([resume_text, jd_text])
     similarity = cosine_similarity(vectors[0:1], vectors[1:2])[0][0]
 
     semantic_score = int(similarity * 100)
 
-    # ---- Hybrid Final Score ----
     final_score = int((skill_score * 0.6) + (semantic_score * 0.4))
 
     return final_score, matched, missing
