@@ -1,4 +1,4 @@
-import fitz  
+import fitz
 import docx
 
 def extract_text_from_pdf(file):
