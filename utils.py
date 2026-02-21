@@ -1,6 +1,7 @@
 import fitz
 import docx
 import re
+from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -36,59 +37,111 @@ def clean_text(text):
 
 
 # -----------------------------
-# MATCHING + HYBRID ATS SCORE
+# IMPORTANCE KEYWORDS
 # -----------------------------
 
-def extract_dynamic_skills(jd_text):
+IMPORTANCE_LEVELS = {
+    3: ["must", "mandatory", "required", "heavy demand", "strong experience"],
+    2: ["preferred", "should have", "good knowledge"],
+    1: ["nice to have", "basic knowledge"]
+}
+
+
+# -----------------------------
+# DYNAMIC SKILL EXTRACTION
+# -----------------------------
+
+def extract_dynamic_skills(jd_text, min_freq=2):
 
     stopwords = {
         "the", "and", "with", "for", "in", "of", "to", "is",
         "a", "an", "on", "at", "by", "from",
         "experience", "required", "looking", "candidate",
         "role", "strong", "good", "ability", "team", "work",
-        "skills", "knowledge"
+        "skills", "knowledge", "we", "are"
     }
 
     words = jd_text.split()
+    word_freq = Counter(words)
 
     skills = set()
 
-    # 1-gram skills
+    # 1-GRAM
     for word in words:
-        if word not in stopwords and len(word) >= 3:
+        if (
+            word not in stopwords
+            and len(word) >= 3
+            and word_freq[word] >= min_freq
+        ):
             skills.add(word)
 
-    # 2-gram skills
-    for i in range(len(words) - 1):
-        w1, w2 = words[i], words[i + 1]
-        if w1 not in stopwords and w2 not in stopwords:
-            skills.add(w1 + " " + w2)
+    # 2-GRAM
+    bigrams = [
+        words[i] + " " + words[i + 1]
+        for i in range(len(words) - 1)
+    ]
+
+    bigram_freq = Counter(bigrams)
+
+    for bg in bigrams:
+        w1, w2 = bg.split()
+
+        if (
+            w1 not in stopwords
+            and w2 not in stopwords
+            and bigram_freq[bg] >= min_freq
+        ):
+            skills.add(bg)
 
     return list(skills)
+
+
+# -----------------------------
+# MATCHING + WEIGHTED ATS SCORE
+# -----------------------------
 
 def calculate_match_score(resume_text, jd_text):
 
     skills = extract_dynamic_skills(jd_text)
 
+    resume_text_lower = resume_text.lower()
+    jd_text_lower = jd_text.lower()
+
     matched = []
     missing = []
 
-    resume_words = set(resume_text.split())
+    total_weight = 0
+    matched_weight = 0
 
     for skill in skills:
-        skill_words = skill.split()
 
-        if all(word in resume_words for word in skill_words):
-            matched.append(skill)
+        # Default weight
+        weight = 2
+
+        # Detect importance
+        for level, keywords in IMPORTANCE_LEVELS.items():
+            for keyword in keywords:
+                if keyword in jd_text_lower and skill in jd_text_lower:
+                    weight = level
+
+        total_weight += weight
+
+        # Check presence in resume
+        if skill in resume_text_lower:
+            matched.append(f"{skill} (weight {weight})")
+            matched_weight += weight
         else:
-            missing.append(skill)
+            missing.append(f"{skill} (weight {weight})")
 
-    total_skills = len(matched) + len(missing)
-
+    # Skill-based score
     skill_score = (
-        int((len(matched) / total_skills) * 100)
-        if total_skills != 0 else 0
+        int((matched_weight / total_weight) * 100)
+        if total_weight != 0 else 0
     )
+
+    # -----------------------------
+    # SEMANTIC SIMILARITY
+    # -----------------------------
 
     vectorizer = TfidfVectorizer()
     vectors = vectorizer.fit_transform([resume_text, jd_text])
@@ -96,6 +149,7 @@ def calculate_match_score(resume_text, jd_text):
 
     semantic_score = int(similarity * 100)
 
+    # Hybrid final score
     final_score = int((skill_score * 0.6) + (semantic_score * 0.4))
 
     return final_score, matched, missing
