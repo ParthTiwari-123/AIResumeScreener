@@ -18,30 +18,6 @@ from utils import (
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="AI Resume Screener", page_icon="🚀", layout="wide")
 
-<<<<<<< HEAD
-st.title("AI Resume Screener")
-st.caption("Analyze how well a resume aligns with a job description using hybrid ATS scoring.")
-
-st.divider()
-
-uploaded_file = st.file_uploader(
-    "Upload Resume (PDF or DOCX)",
-    type=["pdf", "docx"]
-)
-
-job_description = st.text_area(
-    "Paste Job Description",
-    height=200
-)
-
-analyze = st.button("Analyze Resume", use_container_width=True)
-
-if analyze:
-
-    if uploaded_file and job_description:
-
-        with st.spinner("Processing resume and analyzing match..."):
-=======
 # ---------------- LIGHT/DARK MODE ----------------
 mode = st.sidebar.toggle("🌙 Dark Mode", value=True)
 
@@ -112,7 +88,6 @@ if st.button("Analyze Resume 🔍"):
     if uploaded_file and job_description:
 
         with st.spinner("⚡ Analyzing Resume with AI..."):
->>>>>>> 45376ea (UI Changes + Ngram Fixes)
 
             if uploaded_file.name.endswith(".pdf"):
                 resume_text = extract_text_from_pdf(uploaded_file)
@@ -121,31 +96,9 @@ if st.button("Analyze Resume 🔍"):
 
             resume_text = clean_text(resume_text)
             jd_text = clean_text(job_description)
-<<<<<<< HEAD
-
-            score, matched, missing = calculate_match_score(resume_text, jd_text)
-=======
->>>>>>> 45376ea (UI Changes + Ngram Fixes)
 
             score, matched, missing = calculate_match_score(resume_text, jd_text)
 
-<<<<<<< HEAD
-        st.subheader("Match Analysis")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.metric("Overall Match Score", f"{score}%")
-            st.progress(score)
-
-        with col2:
-            if score < 50:
-                st.error("Low alignment with job description.")
-            elif score < 75:
-                st.warning("Moderate alignment. Improvement recommended.")
-            else:
-                st.success("Strong alignment with job description.")
-=======
         st.markdown("<div class='glass'>", unsafe_allow_html=True)
 
         # -------- CIRCULAR GAUGE --------
@@ -164,7 +117,6 @@ if st.button("Analyze Resume 🔍"):
             }
         ))
         st.plotly_chart(gauge, width="stretch")
->>>>>>> 45376ea (UI Changes + Ngram Fixes)
 
         # -------- RADAR CHART --------
         radar = go.Figure()
@@ -177,27 +129,6 @@ if st.button("Analyze Resume 🔍"):
         st.subheader("🧠 Skill Radar Analysis")
         st.plotly_chart(radar, width="stretch")
 
-<<<<<<< HEAD
-        st.subheader("Skill Breakdown")
-
-        skill_col1, skill_col2 = st.columns(2)
-
-        with skill_col1:
-            st.markdown("**Matched Skills**")
-            if matched:
-                for skill in matched:
-                    st.write(f"- {skill}")
-            else:
-                st.write("No matching skills identified.")
-
-        with skill_col2:
-            st.markdown("**Missing Skills**")
-            if missing:
-                for skill in missing:
-                    st.write(f"- {skill}")
-            else:
-                st.write("No major skill gaps detected.")
-=======
         # -------- BREAKDOWN BAR --------
         breakdown = px.bar(
             x=["Matched Skills", "Missing Skills"],
@@ -268,7 +199,6 @@ if st.button("Analyze Resume 🔍"):
                 )
 
             os.unlink(tmpfile.name)
->>>>>>> 45376ea (UI Changes + Ngram Fixes)
 
     else:
-        st.warning("Please upload a resume and provide a job description.")
+        st.warning("Please upload resume and paste job description.")
