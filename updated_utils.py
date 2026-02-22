@@ -72,14 +72,24 @@ def clean_text(text):
 def extract_skill_phrases(sentence):
     doc = nlp(sentence)
     phrases = set()
+
+    # 1️⃣ Always capture defined TECH entities
     for ent in doc.ents:
         if ent.label_ == "TECH":
             phrases.add(ent.text.lower())
+
+    # 2️⃣ Only keep noun chunks that contain a TECH entity
     for chunk in doc.noun_chunks:
-        phrase = chunk.text.strip().lower()
-        if not any(word in GENERIC_WORDS for word in phrase.split()):
-            if doc[chunk.start].pos_ not in ["PRON", "DET", "ADP"]:
-                phrases.add(phrase)
+        chunk_text = chunk.text.strip().lower()
+
+        # Check if this chunk contains any TECH entity token
+        contains_tech = any(
+            token.ent_type_ == "TECH" for token in chunk
+        )
+
+        if contains_tech:
+            phrases.add(chunk_text)
+
     return list(phrases)
 
 # ---------------- ENGINE ----------------
