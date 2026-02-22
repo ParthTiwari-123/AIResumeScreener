@@ -5,9 +5,30 @@ import spacy
 import nltk
 from sentence_transformers import SentenceTransformer, util
 
-# ---------------- LOAD MODELS ----------------
+# ---------------- MODELS ----------------
+try:
+    nlp = spacy.load("en_core_web_sm")
+except:
+    import os
+    os.system("python -m spacy download en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
 
-nlp = spacy.load("en_core_web_sm")
+# Intelligent Skill Recognition
+if "entity_ruler" not in nlp.pipe_names:
+    ruler = nlp.add_pipe("entity_ruler", before="ner")
+    patterns = [
+        {"label": "TECH", "pattern": "python"},
+        {"label": "TECH", "pattern": "java"},
+        {"label": "TECH", "pattern": "c++"},
+        {"label": "TECH", "pattern": "docker"},
+        {"label": "TECH", "pattern": "machine learning"},
+        {"label": "TECH", "pattern": "react"},
+        {"label": "TECH", "pattern": "node"},
+        {"label": "TECH", "pattern": "sql"}
+    ]
+    ruler.add_patterns(patterns)
+
+# 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 try:
@@ -16,25 +37,20 @@ except LookupError:
     nltk.download("punkt")
 
 # ---------------- CONFIG ----------------
-
 IMPORTANCE_KEYWORDS = {
     3: ["must", "mandatory", "required", "need", "essential"],
-    2: ["strong", "solid", "proven", "preferred"],
-    1: ["nice to have", "optional", "plus"]
+    2: ["strong", "solid", "proven", "preferred", "efficient"],
+    1: ["nice to have", "plus", "like"]
 }
 
+# Updated Noise Filter
 GENERIC_WORDS = {
-    "experience", "knowledge", "ability",
-    "role", "position", "candidate",
-    "responsibility", "requirement",
-    "requirements", "skills", "skill",
-    "demand"
+    "experience", "knowledge", "ability", "role", "skills", "who", "have", 
+    "mandatory", "professionals", "efficient", "looking", "someone"
 }
+SIMILARITY_THRESHOLD = 0.55 # Contextual threshold
 
-SIMILARITY_THRESHOLD = 0.45
-
-# ---------------- TEXT EXTRACTION ----------------
-
+# ---------------- UTILS ----------------
 def extract_text_from_pdf(file):
     text = ""
     file.seek(0)
@@ -48,128 +64,71 @@ def extract_text_from_docx(file):
     doc = docx.Document(file)
     return "\n".join([para.text for para in doc.paragraphs])
 
-# ---------------- CLEANING ----------------
-
 def clean_text(text):
     text = text.lower()
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
-# ---------------- REQUIREMENT SENTENCES ----------------
-
-def extract_requirement_sentences(jd_text):
-    sentences = nltk.sent_tokenize(jd_text)
-
-    triggers = [
-        "require", "required", "must",
-        "need", "looking for",
-        "should have", "nice to have",
-        "preferred"
-    ]
-
-    filtered = [
-        s for s in sentences
-        if any(trigger in s.lower() for trigger in triggers)
-    ]
-
-    return filtered if filtered else sentences
-
-# ---------------- SKILL PHRASE EXTRACTION ----------------
-
 def extract_skill_phrases(sentence):
     doc = nlp(sentence)
     phrases = set()
-
+    for ent in doc.ents:
+        if ent.label_ == "TECH":
+            phrases.add(ent.text.lower())
     for chunk in doc.noun_chunks:
         phrase = chunk.text.strip().lower()
-
-        if len(phrase.split()) <= 4:
-            if not any(word in GENERIC_WORDS for word in phrase.split()):
+        if not any(word in GENERIC_WORDS for word in phrase.split()):
+            if doc[chunk.start].pos_ not in ["PRON", "DET", "ADP"]:
                 phrases.add(phrase)
+    return list(phrases)
 
-    # Remove sub-phrases
-    cleaned = set()
-    for phrase in phrases:
-        if not any(
-            phrase != other and phrase in other
-            for other in phrases
-        ):
-            cleaned.add(phrase)
-
-    return list(cleaned)
-
-# ---------------- IMPORTANCE WEIGHT ----------------
-
-def get_sentence_weight(sentence):
-    sentence_lower = sentence.lower()
-
-    for weight, keywords in IMPORTANCE_KEYWORDS.items():
-        for keyword in keywords:
-            if keyword in sentence_lower:
-                return weight
-
-    return 2
-
-# ---------------- MATCH ENGINE ----------------
-
+# ---------------- ENGINE ----------------
 def calculate_match_score(resume_text, jd_text):
-
     resume_clean = clean_text(resume_text)
     jd_clean = clean_text(jd_text)
 
-    requirement_sentences = extract_requirement_sentences(jd_clean)
+    # Split resume into sentences for better semantic search
+    resume_sentences = nltk.sent_tokenize(resume_clean)
+    if not resume_sentences: return 0, [], []
+    resume_embeddings = model.encode(resume_sentences, convert_to_tensor=True)
 
-    skill_data = []
-
-    for sentence in requirement_sentences:
-        weight = get_sentence_weight(sentence)
-        phrases = extract_skill_phrases(sentence)
-
-        for phrase in phrases:
-            skill_data.append((phrase, weight))
-
-    # Deduplicate while keeping highest weight
+    jd_sentences = nltk.sent_tokenize(jd_clean)
     skill_dict = {}
-    for phrase, weight in skill_data:
-        if phrase not in skill_dict:
-            skill_dict[phrase] = weight
-        else:
-            skill_dict[phrase] = max(skill_dict[phrase], weight)
 
-    if not skill_dict:
-        return 0, [], []
+    for sent in jd_sentences:
+        weight = 2
+        for w, keywords in IMPORTANCE_KEYWORDS.items():
+            if any(kw in sent.lower() for kw in keywords):
+                weight = w
+        phrases = extract_skill_phrases(sent)
+        for p in phrases:
+            skill_dict[p] = max(skill_dict.get(p, 0), weight)
 
-    resume_embedding = model.encode(resume_clean, convert_to_tensor=True)
+    if not skill_dict: return 0, [], []
 
-    matched = []
-    missing = []
-
-    total_weight = 0
-    matched_weight = 0
+    matched, missing = [], []
+    total_w, matched_w = 0, 0
 
     for phrase, weight in skill_dict.items():
-
         phrase_embedding = model.encode(phrase, convert_to_tensor=True)
-        similarity = util.cos_sim(phrase_embedding, resume_embedding).item()
-
-        total_weight += weight
-
-        if similarity > SIMILARITY_THRESHOLD:
+        # Fix: Line was commented out, causing NameError
+        cos_scores = util.cos_sim(phrase_embedding, resume_embeddings)[0]
+        max_sim = cos_scores.max().item()
+        
+        total_w += weight
+        # 0.55 works better for sentence-to-phrase matching
+        if max_sim > SIMILARITY_THRESHOLD or phrase in resume_clean:
             matched.append(phrase)
-            matched_weight += weight
+            matched_w += weight
         else:
             missing.append(phrase)
 
-    # ---------------- PRIMARY SCORE ----------------
-    skill_score = int((matched_weight / total_weight) * 100)
-
-    # ---------------- CONTEXT BONUS ----------------
-    bonus = 0
-    for skill in matched:
-        count = resume_clean.count(skill)
-        if count > 1:
-            bonus += min(5, count)
-
-    final_score = min(100, skill_score + bonus)
-
-    return final_score, matched, missing
+    skill_score = int((matched_w / total_w) * 100) if total_w > 0 else 0
+    
+    # Hybrid Final Score
+    full_resume_emb = model.encode(resume_clean, convert_to_tensor=True)
+    full_jd_emb = model.encode(jd_clean, convert_to_tensor=True)
+    semantic_overall = util.cos_sim(full_resume_emb, full_jd_emb).item()
+    
+    final_score = int((skill_score * 0.7) + (semantic_overall * 30))
+    return min(100, final_score), matched, missing
