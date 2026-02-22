@@ -67,80 +67,153 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    /* Main Background aur Font Styles */
-    .main { background-color: #ffffff; }
-    body { color: #1f2937; font-family: 'Inter', sans-serif; }
-    
-    /* Branding Header - Large & Centered */
-    .main-header {
-        text-align: center;
-        font-size: 6rem;
-        font-weight: 900;
-        background: -webkit-linear-gradient(#4f46e5, #9333ea);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-top: 20px;
-        margin-bottom: 0px;
-        letter-spacing: -2px;
-    }
-    .sub-header {
-        text-align: center;
-        color: #6b7280;
-        font-size: 1.5rem;
-        font-weight: 400;
-        margin-bottom: 60px;
-    }
 
-    /* Cards aur Containers */
-    .card {
-        background: #f9fafb;
-        padding: 40px;
-        border-radius: 24px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        margin-bottom: 30px;
-    }
-    
-    /* Skill Tags Styles */
-    .tag {
-        padding: 10px 20px;
-        border-radius: 12px;
-        display: inline-block;
-        margin: 6px;
-        font-size: 14px;
-        font-weight: 600;
-    }
-    .tag-matched { background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; }
-    .tag-missing { background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+/* Import Premium Font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-    /* Button Customization */
-    .stButton > button {
-        width: 100%;
-        background: linear-gradient(90deg, #4f46e5 0%, #9333ea 100%);
-        color: white;
-        border: none;
-        padding: 20px;
-        border-radius: 16px;
-        font-size: 1.25rem;
-        font-weight: 800;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        cursor: pointer;
-    }
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
-    }
-    
-    /* Metrics */
-    [data-testid="stMetricValue"] { font-size: 2.5rem !important; color: #4f46e5 !important; font-weight: 800 !important; }
-    
-    /* Footer */
-    .footer {
-        text-align: center;
-        padding: 50px 0;
-        color: #9ca3af;
-        font-size: 1.1rem;
-    }
+/* Global */
+html, body, [class*="css"]  {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Remove default padding blocks */
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* Remove unwanted white boxes */
+div[data-testid="stVerticalBlock"] > div:empty {
+    display: none !important;
+}
+
+/* Main Background */
+.stApp {
+    background: linear-gradient(135deg, #0f172a, #111827);
+    color: #f8fafc;
+}
+
+/* Header */
+.main-header {
+    text-align: center;
+    font-size: 4.5rem;
+    font-weight: 900;
+    background: linear-gradient(90deg,#6366f1,#a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: fadeDown 1s ease forwards;
+}
+
+.sub-header {
+    text-align: center;
+    color: #9ca3af;
+    font-size: 1.2rem;
+    margin-bottom: 3rem;
+    animation: fadeUp 1.2s ease forwards;
+}
+
+/* Card Style */
+.card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(16px);
+    border-radius: 20px;
+    padding: 30px;
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: all 0.3s ease;
+    animation: fadeUp 0.8s ease forwards;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+/* Inputs */
+textarea, .stFileUploader {
+    border-radius: 15px !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    background: rgba(255,255,255,0.04) !important;
+    color: white !important;
+    transition: 0.3s;
+}
+
+textarea:focus {
+    border-color: #8b5cf6 !important;
+    box-shadow: 0 0 0 2px rgba(139,92,246,0.3);
+}
+
+/* Button */
+.stButton > button {
+    background: linear-gradient(90deg,#6366f1,#a855f7);
+    border: none;
+    border-radius: 14px;
+    padding: 14px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.stButton > button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(139,92,246,0.4);
+}
+
+/* Metric Style */
+[data-testid="stMetric"] {
+    background: rgba(255,255,255,0.05);
+    padding: 20px;
+    border-radius: 18px;
+    text-align: center;
+    transition: 0.3s;
+}
+
+[data-testid="stMetric"]:hover {
+    transform: scale(1.05);
+}
+
+/* Tags */
+.tag {
+    padding: 8px 16px;
+    border-radius: 30px;
+    display: inline-block;
+    margin: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    animation: fadeUp 0.5s ease forwards;
+}
+
+.tag-matched {
+    background: rgba(16,185,129,0.2);
+    color: #10b981;
+    border: 1px solid #10b981;
+}
+
+.tag-missing {
+    background: rgba(239,68,68,0.2);
+    color: #ef4444;
+    border: 1px solid #ef4444;
+}
+
+/* Animations */
+@keyframes fadeUp {
+    from { opacity:0; transform: translateY(20px); }
+    to { opacity:1; transform: translateY(0); }
+}
+
+@keyframes fadeDown {
+    from { opacity:0; transform: translateY(-20px); }
+    to { opacity:1; transform: translateY(0); }
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    margin-top: 4rem;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -183,26 +256,27 @@ def generate_report_pdf(score, matched, missing, domain, health):
 
 # ---------------- MAIN UI ----------------
 
-st.markdown('<p class="main-header">SkillSync</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">Intelligent Professional ATS Simulation</p>', unsafe_allow_html=True)
-
+st.markdown('<div class="main-header">SkillSync AI Pro</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Intelligent ATS Resume Intelligence Engine</div>', unsafe_allow_html=True)
 # Main Container
-with st.container():
-    c1, c2 = st.columns([1, 1], gap="large")
+
+c1, c2 = st.columns([1, 1], gap="large")
     
-    with c1:
+with c1:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("### 📄 Resume Upload")
+        st.markdown("### Resume Upload")
         uploaded_file = st.file_uploader("Upload PDF or DOCX", type=["pdf", "docx"], label_visibility="collapsed")
         st.markdown("</div>", unsafe_allow_html=True)
         
-    with c2:
+with c2:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("### 📝 Job Description")
+        st.markdown("### Job Description")
         jd_text = st.text_area("Paste requirement details", height=150, placeholder="Describe the ideal candidate...", label_visibility="collapsed")
         st.markdown("</div>", unsafe_allow_html=True)
 
-if st.button("RUN ANALYSIS"):
+st.markdown("<br>", unsafe_allow_html=True)
+run = st.button("RUN ANALYSIS")
+if run:
     if uploaded_file and jd_text:
         with st.spinner("Extracting semantic markers..."):
             if uploaded_file.name.endswith(".pdf"):
@@ -225,8 +299,8 @@ if st.button("RUN ANALYSIS"):
                 "Work Experience": "experience" in raw_text.lower()
             }
             health_score = sum(checks.values())
-
-        st.markdown("---")
+        
+        st.markdown("<hr style='margin-top:40px; margin-bottom:40px; border:1px solid rgba(255,255,255,0.08);'>", unsafe_allow_html=True)
         
         # Dashboard Overview
         k1, k2, k3, k4 = st.columns(4)
@@ -244,23 +318,22 @@ if st.button("RUN ANALYSIS"):
                 mode="gauge+number",
                 value=score,
                 gauge={
-                    'axis': {'range': [0, 100], 'tickcolor': "#4b5563"},
-                    'bar': {'color': "#4f46e5"},
+                    'axis': {'range': [0, 100], 'tickcolor': "#6f7681"},
+                    'bar': {'color': "#5e57e5"},
                     'bgcolor': "#ffffff",
                     'steps': [
-                        {'range': [0, 50], 'color': "#fee2e2"},
-                        {'range': [50, 75], 'color': "#fef3c7"},
-                        {'range': [75, 100], 'color': "#d1fae5"}
+                        {'range': [0, 50], 'color': "#fec6c6"},
+                        {'range': [50, 75], 'color': "#fbecb1"},
+                        {'range': [75, 100], 'color': "#b0ffd6"}
                     ],
                 }
             ))
-            fig_gauge.update_layout(title={'text': "Match Confidence", 'x': 0.5}, font={'color': "#111827"}, height=400)
+            fig_gauge.update_layout(title={'text': "Match Confidence", 'x': 0.5}, font={'color': "#ADB6CA"}, height=400)
             st.plotly_chart(fig_gauge, use_container_width=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
         with v2:
             st.markdown("<div class='card'>", unsafe_allow_html=True)
-            st.markdown("<h4 style='text-align: center;'>Skill Distribution</h4>", unsafe_allow_html=True)
             fig_radar = go.Figure()
             fig_radar.add_trace(go.Scatterpolar(
                 r=[len(matched), len(missing), score/10, health_score * 2, 8],
@@ -280,7 +353,7 @@ if st.button("RUN ANALYSIS"):
         
         with b1:
             st.markdown("<div class='card'>", unsafe_allow_html=True)
-            st.markdown("### ✅ Identified Proficiencies")
+            st.markdown("### Identified Proficiencies")
             if matched:
                 for s in matched: st.markdown(f"<span class='tag tag-matched'>{s}</span>", unsafe_allow_html=True)
             else: st.write("No direct matches found.")
@@ -288,7 +361,7 @@ if st.button("RUN ANALYSIS"):
             
         with b2:
             st.markdown("<div class='card'>", unsafe_allow_html=True)
-            st.markdown("### ❌ Requirement Gaps")
+            st.markdown("### Requirement Gaps")
             if missing:
                 for s in missing: st.markdown(f"<span class='tag tag-missing'>{s}</span>", unsafe_allow_html=True)
             else: st.success("Document satisfies all technical requirements.")
