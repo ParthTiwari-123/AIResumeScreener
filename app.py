@@ -12,8 +12,15 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
 from reportlab.lib import colors
+import spacy
+from spacy.cli import download
 
-# Updated utils se functions import kar rahe hain
+try:
+    nlp = spacy.load("en_core_web_sm")
+except:
+    download("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
+
 from updated_utils import (
     extract_text_from_pdf,
     extract_text_from_docx,
