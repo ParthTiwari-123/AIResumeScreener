@@ -8,44 +8,37 @@ from reportlab.lib.units import inch
 import tempfile
 import os
 
-_='''from utils import (
-    extract_text_from_pdf,
-    extract_text_from_docx,
-    clean_text,
-    calculate_match_score
-)'''
-
 from updated_utils import (
     extract_text_from_pdf,
     extract_text_from_docx,
-    clean_text,
     calculate_match_score
 )
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(page_title="AI Resume Screener", page_icon="🚀", layout="wide")
 
-# ---------------- MODERN PROFESSIONAL STYLING ----------------
+# ---------------- PAGE CONFIG ----------------
+
+st.set_page_config(
+    page_title="AI Resume Screener",
+    page_icon="🚀",
+    layout="wide"
+)
+
+# ---------------- DARK THEME ----------------
+
 st.markdown("""
 <style>
 body {
-    background: #f7f8fc;
-}
-
-.main {
-    padding: 20px;
+    background: #0f1117;
+    color: #f5f5f5;
 }
 
 .card {
-    background: white;
-    padding: 26px;
-    border-radius: 16px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+    background: #1a1d25;
+    padding: 28px;
+    border-radius: 18px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
     transition: all 0.25s ease;
-}
-
-.card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.12);
+    color: #ffffff;
+    height: 100%;
 }
 
 .skill-tag {
@@ -54,21 +47,14 @@ body {
     display: inline-block;
     margin: 4px;
     font-size: 13px;
-    transition: transform 0.2s ease;
-}
-
-.skill-tag:hover {
-    transform: scale(1.05);
 }
 
 .matched {
     background: #00c9a7;
-    color: #ffffff;
 }
 
 .missing {
     background: #ff4b5c;
-    color: #ffffff;
 }
 
 .stButton > button {
@@ -79,30 +65,27 @@ body {
     background: linear-gradient(135deg, #5b8def, #8e44fd);
     color: white;
     border: none;
-    transition: all 0.2s ease;
-}
-
-.stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 24px rgba(91, 141, 239, 0.35);
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------- HEADER ----------------
-st.title("AI Resume Screener")
+
+st.title("🚀 AI Resume Screener")
 st.markdown("### Professional ATS Simulation & Skill Analysis")
 
-# ---------------- INPUT SECTION ----------------
-col1, col2 = st.columns(2)
+# ---------------- INPUT ----------------
+
+col1, col2 = st.columns(2, gap="large")
 
 with col1:
     uploaded_file = st.file_uploader("Upload Resume", type=["pdf", "docx"])
 
 with col2:
-    job_description = st.text_area("Paste Job Description", height=200)
+    job_description = st.text_area("Paste Job Description", height=220)
 
-# ---------------- ANALYZE BUTTON ----------------
+# ---------------- ANALYSIS ----------------
+
 if st.button("Analyze Resume"):
 
     if uploaded_file and job_description:
@@ -114,15 +97,13 @@ if st.button("Analyze Resume"):
             else:
                 resume_text = extract_text_from_docx(uploaded_file)
 
-            resume_text = clean_text(resume_text)
-            jd_text = clean_text(job_description)
-
-            score, matched, missing = calculate_match_score(resume_text, jd_text)
+            score, matched, missing = calculate_match_score(resume_text, job_description)
 
         st.markdown("---")
 
-        # RESULTS GRID
-        col_g1, col_g2 = st.columns([1, 1])
+        # ---------------- RESULTS ----------------
+
+        col_g1, col_g2 = st.columns(2, gap="large")
 
         with col_g1:
             st.markdown("<div class='card'>", unsafe_allow_html=True)
@@ -141,6 +122,7 @@ if st.button("Analyze Resume"):
                     ],
                 }
             ))
+
             st.plotly_chart(gauge, use_container_width=True)
 
             st.markdown("</div>", unsafe_allow_html=True)
@@ -148,12 +130,19 @@ if st.button("Analyze Resume"):
         with col_g2:
             st.markdown("<div class='card'>", unsafe_allow_html=True)
 
+            total_skills = len(matched) + len(missing)
             radar = go.Figure()
+
             radar.add_trace(go.Scatterpolar(
-                r=[len(matched), len(missing), score],
+                r=[
+                    len(matched),
+                    len(missing),
+                    score
+                ],
                 theta=["Matched Skills", "Missing Skills", "Overall Score"],
                 fill='toself'
             ))
+
             radar.update_layout(showlegend=False)
 
             st.subheader("Skill Radar Analysis")
@@ -161,47 +150,47 @@ if st.button("Analyze Resume"):
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # BREAKDOWN
+        # ---------------- BREAKDOWN ----------------
+
         st.markdown("---")
-        col_b1, col_b2 = st.columns(2)
+
+        col_b1, col_b2 = st.columns(2, gap="large")
 
         with col_b1:
             st.markdown("<div class='card'>", unsafe_allow_html=True)
+
             breakdown = px.bar(
                 x=["Matched", "Missing"],
                 y=[len(matched), len(missing)],
                 labels={'x': 'Category', 'y': 'Count'}
             )
+
             st.subheader("Skill Breakdown")
             st.plotly_chart(breakdown, use_container_width=True)
+
             st.markdown("</div>", unsafe_allow_html=True)
 
         with col_b2:
             st.markdown("<div class='card'>", unsafe_allow_html=True)
 
             st.subheader("Matched Skills")
-            if matched:
-                for skill in matched:
-                    st.markdown(
-                        f"<span class='skill-tag matched'>{skill}</span>",
-                        unsafe_allow_html=True
-                    )
-            else:
-                st.write("No matching skills.")
+            for skill in matched:
+                st.markdown(
+                    f"<span class='skill-tag matched'>{skill}</span>",
+                    unsafe_allow_html=True
+                )
 
             st.subheader("Missing Skills")
-            if missing:
-                for skill in missing:
-                    st.markdown(
-                        f"<span class='skill-tag missing'>{skill}</span>",
-                        unsafe_allow_html=True
-                    )
-            else:
-                st.write("No missing skills.")
+            for skill in missing:
+                st.markdown(
+                    f"<span class='skill-tag missing'>{skill}</span>",
+                    unsafe_allow_html=True
+                )
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # PDF REPORT
+        # ---------------- PDF REPORT ----------------
+
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
             doc = SimpleDocTemplate(tmpfile.name, pagesize=A4)
             elements = []
