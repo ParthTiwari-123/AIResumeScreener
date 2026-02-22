@@ -8,13 +8,19 @@ from reportlab.lib.units import inch
 import tempfile
 import os
 
-from utils import (
+_='''from utils import (
+    extract_text_from_pdf,
+    extract_text_from_docx,
+    clean_text,
+    calculate_match_score
+)'''
+
+from updated_utils import (
     extract_text_from_pdf,
     extract_text_from_docx,
     clean_text,
     calculate_match_score
 )
-
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="AI Resume Screener", page_icon="🚀", layout="wide")
 
