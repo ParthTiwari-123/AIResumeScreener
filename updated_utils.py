@@ -32,6 +32,8 @@ if "entity_ruler" not in nlp.pipe_names:
         {"label": "SKILL", "pattern": [{"LOWER": "swift"}]},
         {"label": "SKILL", "pattern": [{"LOWER": "kotlin"}]},
         {"label": "SKILL", "pattern": [{"LOWER": "rust"}]},
+        {"label": "SKILL", "pattern": [{"LOWER": "nodejs"}]},
+        {"label": "SKILL", "pattern": [{"LOWER": "express"}]},
 
         # ---------- DATA ----------
         {"label": "SKILL", "pattern": [{"LOWER": "machine"}, {"LOWER": "learning"}]},
