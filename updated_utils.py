@@ -1,42 +1,37 @@
 import fitz
 import docx
 import re
+import spacy
 import nltk
 from sentence_transformers import SentenceTransformer, util
 
-# Load semantic model once
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# ---------------- LOAD MODELS ----------------
 
-# NLTK setup
+nlp = spacy.load("en_core_web_sm")
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
 try:
-    nltk.data.find('tokenizers/punkt')
+    nltk.data.find("tokenizers/punkt")
 except LookupError:
-    nltk.download('punkt')
-    nltk.download('stopwords')
+    nltk.download("punkt")
 
 # ---------------- CONFIG ----------------
 
-IMPORTANCE_LEVELS = {
-    3: ["must", "mandatory", "required", "need", "demand"],
-    2: ["preferred", "should have", "strong"],
-    1: ["nice to have", "good to have", "optional"]
+IMPORTANCE_KEYWORDS = {
+    3: ["must", "mandatory", "required", "need", "essential"],
+    2: ["strong", "solid", "proven", "preferred"],
+    1: ["nice to have", "optional", "plus"]
 }
 
-SKILL_ALIASES = {
-    "python": [],
-    "sql": [],
-    "machine learning": ["ml", "machine-learning"],
-    "artificial intelligence": ["ai", "artificial-intelligence"],
-    "javascript": ["js"],
-    "react": ["reactjs", "react.js"],
-    "nodejs": ["node.js"],
-    "mongodb": ["mongo"],
-    "aws": ["amazon web services"],
-    "kubernetes": ["k8s"],
-    "natural language processing": ["nlp"],
-    "java": [],
-    "c++": ["cpp"]
+GENERIC_WORDS = {
+    "experience", "knowledge", "ability",
+    "role", "position", "candidate",
+    "responsibility", "requirement",
+    "requirements", "skills", "skill",
+    "demand"
 }
+
+SIMILARITY_THRESHOLD = 0.45
 
 # ---------------- TEXT EXTRACTION ----------------
 
@@ -57,36 +52,94 @@ def extract_text_from_docx(file):
 
 def clean_text(text):
     text = text.lower()
-    text = re.sub(r'[^a-zA-Z0-9\s\+]', ' ', text)
-    return re.sub(r'\s+', ' ', text).strip()
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
 
-def normalize_aliases(text):
-    for standard, aliases in SKILL_ALIASES.items():
-        for alias in aliases:
-            text = re.sub(rf'\b{re.escape(alias)}\b', standard, text)
-    return text
+# ---------------- REQUIREMENT SENTENCES ----------------
 
-# ---------------- SKILL EXTRACTION ----------------
-
-def extract_dynamic_skills(jd_text):
+def extract_requirement_sentences(jd_text):
     sentences = nltk.sent_tokenize(jd_text)
-    skills = set()
 
-    for sentence in sentences:
-        for skill in SKILL_ALIASES.keys():
-            if skill in sentence:
-                skills.add(skill)
+    triggers = [
+        "require", "required", "must",
+        "need", "looking for",
+        "should have", "nice to have",
+        "preferred"
+    ]
 
-    return list(skills)
+    filtered = [
+        s for s in sentences
+        if any(trigger in s.lower() for trigger in triggers)
+    ]
+
+    return filtered if filtered else sentences
+
+# ---------------- SKILL PHRASE EXTRACTION ----------------
+
+def extract_skill_phrases(sentence):
+    doc = nlp(sentence)
+    phrases = set()
+
+    for chunk in doc.noun_chunks:
+        phrase = chunk.text.strip().lower()
+
+        if len(phrase.split()) <= 4:
+            if not any(word in GENERIC_WORDS for word in phrase.split()):
+                phrases.add(phrase)
+
+    # Remove sub-phrases
+    cleaned = set()
+    for phrase in phrases:
+        if not any(
+            phrase != other and phrase in other
+            for other in phrases
+        ):
+            cleaned.add(phrase)
+
+    return list(cleaned)
+
+# ---------------- IMPORTANCE WEIGHT ----------------
+
+def get_sentence_weight(sentence):
+    sentence_lower = sentence.lower()
+
+    for weight, keywords in IMPORTANCE_KEYWORDS.items():
+        for keyword in keywords:
+            if keyword in sentence_lower:
+                return weight
+
+    return 2
 
 # ---------------- MATCH ENGINE ----------------
 
 def calculate_match_score(resume_text, jd_text):
 
-    resume_processed = normalize_aliases(clean_text(resume_text))
-    jd_processed = normalize_aliases(clean_text(jd_text))
+    resume_clean = clean_text(resume_text)
+    jd_clean = clean_text(jd_text)
 
-    skills = extract_dynamic_skills(jd_processed)
+    requirement_sentences = extract_requirement_sentences(jd_clean)
+
+    skill_data = []
+
+    for sentence in requirement_sentences:
+        weight = get_sentence_weight(sentence)
+        phrases = extract_skill_phrases(sentence)
+
+        for phrase in phrases:
+            skill_data.append((phrase, weight))
+
+    # Deduplicate while keeping highest weight
+    skill_dict = {}
+    for phrase, weight in skill_data:
+        if phrase not in skill_dict:
+            skill_dict[phrase] = weight
+        else:
+            skill_dict[phrase] = max(skill_dict[phrase], weight)
+
+    if not skill_dict:
+        return 0, [], []
+
+    resume_embedding = model.encode(resume_clean, convert_to_tensor=True)
 
     matched = []
     missing = []
@@ -94,36 +147,29 @@ def calculate_match_score(resume_text, jd_text):
     total_weight = 0
     matched_weight = 0
 
-    jd_sentences = nltk.sent_tokenize(jd_text.lower())
+    for phrase, weight in skill_dict.items():
 
-    for skill in skills:
-        weight = 2  # default
-
-        # Check importance ONLY in sentence containing skill
-        for sentence in jd_sentences:
-            if skill in sentence:
-                for level, keywords in IMPORTANCE_LEVELS.items():
-                    for keyword in keywords:
-                        if keyword in sentence:
-                            weight = level
+        phrase_embedding = model.encode(phrase, convert_to_tensor=True)
+        similarity = util.cos_sim(phrase_embedding, resume_embedding).item()
 
         total_weight += weight
 
-        if skill in resume_processed:
-            matched.append(skill)
+        if similarity > SIMILARITY_THRESHOLD:
+            matched.append(phrase)
             matched_weight += weight
         else:
-            missing.append(skill)
+            missing.append(phrase)
 
-    skill_score = int((matched_weight / total_weight) * 100) if total_weight else 0
+    # ---------------- PRIMARY SCORE ----------------
+    skill_score = int((matched_weight / total_weight) * 100)
 
-    # Semantic similarity
-    resume_embedding = model.encode(resume_processed, convert_to_tensor=True)
-    jd_embedding = model.encode(jd_processed, convert_to_tensor=True)
+    # ---------------- CONTEXT BONUS ----------------
+    bonus = 0
+    for skill in matched:
+        count = resume_clean.count(skill)
+        if count > 1:
+            bonus += min(5, count)
 
-    semantic_score = int(util.cos_sim(resume_embedding, jd_embedding).item() * 100)
-
-    # Final weighted score
-    final_score = int((skill_score * 0.6) + (semantic_score * 0.4))
+    final_score = min(100, skill_score + bonus)
 
     return final_score, matched, missing
