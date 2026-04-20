@@ -1,6 +1,6 @@
-# MatchIQ — AI-Powered Resume Analyzer
+# SkillSyncAI Pro — AI-Powered Resume Analyzer
 
-MatchIQ is a hybrid AI-based ATS simulator that analyzes how well a resume aligns with a given job description.
+SkillSyncAI Pro is a hybrid AI-based ATS simulator that analyzes how well a resume aligns with a given job description.
 
 It combines:
 - Dynamic skill extraction from job descriptions
