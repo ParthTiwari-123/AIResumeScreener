@@ -97,6 +97,11 @@ try:
 except LookupError:
     nltk.download("punkt")
 
+try:
+    nltk.data.find("tokenizers/punkt_tab")
+except LookupError:
+    nltk.download("punkt_tab")
+
 # ---------------- CONFIG ----------------
 IMPORTANCE_KEYWORDS = {
     3: ["must", "mandatory", "required", "need", "essential"],
