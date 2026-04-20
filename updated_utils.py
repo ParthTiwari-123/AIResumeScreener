@@ -6,12 +6,7 @@ import nltk
 from sentence_transformers import SentenceTransformer, util
 
 # ---------------- MODELS ----------------
-try:
-    nlp = spacy.load("en_core_web_sm")
-except:
-    import os
-    os.system("python -m spacy download en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
+nlp = spacy.load("en_core_web_sm")
 
 # ---------------- ENTITY RULER (EXPANDED SKILLS) ----------------
 if "entity_ruler" not in nlp.pipe_names:

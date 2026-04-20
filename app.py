@@ -14,14 +14,8 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 import spacy
 import os
-from spacy.cli import download
-
-MODEL_DIR = "models/en_core_web_sm"
-
-if not os.path.exists(MODEL_DIR):
-    download("en_core_web_sm", False, False, MODEL_DIR)
-
-nlp = spacy.load(MODEL_DIR)
+import spacy
+nlp = spacy.load("en_core_web_sm")
 
 from updated_utils import (
     extract_text_from_pdf,
